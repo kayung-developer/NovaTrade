@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovaTrade - Advanced Crypto & Forex Platform</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6d28d9; /* Deep Purple */
+            --primary-hover: #5b21b6;
+            --secondary-color: #10b981; /* Emerald Green for gains */
+            --danger-color: #ef4444;    /* Red for losses/errors */
+            --background-color: #111827; /* Dark Gray-Blue */
+            --surface-color: #1f2937;   /* Lighter Gray-Blue for cards/modals */
+            --text-primary: #f3f4f6;    /* Light Gray */
+            --text-secondary: #9ca3af;  /* Medium Gray */
+            --border-color: #374151;
+            --input-bg: #374151;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overscroll-behavior-y: contain;
+        }
+
+        #root {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: var(--surface-color);
+            padding: 2rem 1rem;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 2.5rem;
+            letter-spacing: 1px;
+        }
+        .sidebar-logo span {
+            color: var(--text-primary);
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item a, .nav-item button {
+            display: flex;
+            align-items: center;
+            padding: 0.9rem 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+        .nav-item a svg, .nav-item button svg {
+            margin-right: 0.8rem;
+            width: 20px;
+            height: 20px;
+        }
+        .nav-item a:hover, .nav-item button:hover, .nav-item a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .nav-item button:hover svg, .nav-item a:hover svg, .nav-item a.active svg {
+            fill: white; /* For SVGs that use fill */
+            stroke: white; /* For SVGs that use stroke */
+        }
+
+
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.9rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        td {
+            font-size: 0.95rem;
+        }
+        tbody tr:hover {
+            background-color: #2a3647; /* Slightly lighter than surface for hover */
+        }
+        .price-up { color: var(--secondary-color); }
+        .price-down { color: var(--danger-color); }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.3);
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 1rem;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        .btn-secondary {
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background-color: #374151; /* Darken surface color */
+        }
+        .btn-buy {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        .btn-buy:hover {
+            background-color: #059669; /* Darker green */
+        }
+        .btn-sell {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .btn-sell:hover {
+            background-color: #dc2626; /* Darker red */
+        }
+        .btn-full-width {
+            width: 100%;
+        }
+
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .auth-form {
+            width: 100%;
+            max-width: 450px;
+            background-color: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .auth-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-switch {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-secondary);
+        }
+        .auth-switch a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification.success { background-color: var(--secondary-color); }
+        .notification.error { background-color: var(--danger-color); }
+        .notification.info { background-color: var(--primary-color); }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-card-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        .stat-card-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .stat-card-change {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        /* Chart specific styling */
+        .chart-container {
+            height: 350px; /* Default height */
+            position: relative;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px; /* Hidden by default */
+                top: 0;
+                bottom: 0;
+                z-index: 100;
+                transition: left 0.3s ease-in-out;
+                box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .main-content {
+                padding: 1rem;
+            }
+            .page-header {
+                font-size: 1.5rem;
+            }
+            .hamburger-menu {
+                display: block; /* Show hamburger menu on mobile */
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 101; /* Above sidebar when closed */
+                background: var(--surface-color);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+                padding: 0.5rem;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+            .app-container.sidebar-open .main-content {
+                margin-left: 260px; /* Push content when sidebar is open */
+            }
+        }
+        .hamburger-menu { display: none; } /* Hide by default on larger screens */
+
+        /* Utility classes */
+        .text-center { text-align: center; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .d-flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .align-center { align-items: center; }
+        .w-100 { width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext, useRef } = React;
+
+        // --- Constants ---
+        const DEPLOYED_API_BASE_URL = 'YOUR_DEPLOYED_FASTAPI_BACKEND_URL_HERE';
+        const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:8000'
+            : DEPLOYED_API_BASE_URL;
+
+        // --- Firebase Configuration ---
+        // !!! REPLACE WITH YOUR ACTUAL FIREBASE CONFIG !!!
+     const firebaseConfig = {
+        apiKey: "AIzaSyCQxJl1DH5IfXFHcNTJ9u3XTxahgUdmCf4",
+        authDomain: "novatrade-fb5c9.firebaseapp.com",
+        projectId: "novatrade-fb5c9",
+        storageBucket: "novatrade-fb5c9.firebasestorage.app",
+        messagingSenderId: "29035986519",
+        appId: "1:29035986519:web:90be1847418a6bdfabed12",
+        measurementId: "G-TJQSQ4QLJ0"
+    };
+
+
+        let firebaseApp;
+        try {
+            if (firebase.apps.length === 0) {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+            } else {
+                firebaseApp = firebase.app();
+            }
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+             if (firebase.apps.length === 0) {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+            } else {
+                firebaseApp = firebase.app();
+            }
+        }
+        const firebaseAuth = firebase.auth();
+
+        // --- Context for Authentication ---
+        const AuthContext = createContext();
+
+        function AuthProvider({ children }) {
+            const [firebaseUser, setFirebaseUser] = useState(null);
+            const [idToken, setIdToken] = useState(null);
+            const [dbUser, setDbUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                console.log("[AuthProvider] Mounting or idToken/dbUser state changed. Current loading:", loading, "isAuthenticated:", !!idToken && !!dbUser);
+                const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
+                    console.log("[AuthProvider] onAuthStateChanged triggered. Current loading state:", loading);
+                    setLoading(true); // Set loading true at the start of auth state change
+                    if (user) {
+                        setFirebaseUser(user);
+                        console.log("[AuthProvider] Firebase user found:", user.uid, "Email:", user.email);
+                        try {
+                            const token = await user.getIdToken(true); // Force refresh token
+                            setIdToken(token);
+                            console.log("[AuthProvider] Firebase ID Token obtained.");
+
+                            // Fetch/sync user profile from our backend
+                            console.log(`[AuthProvider] Fetching DB user from ${API_BASE_URL}/users/me`);
+                            const response = await fetch(`${API_BASE_URL}/users/me`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            console.log("[AuthProvider] Backend /users/me response status:", response.status);
+
+                            if (response.ok) {
+                                const userDataFromDb = await response.json();
+                                setDbUser(userDataFromDb);
+                                console.log("[AuthProvider] DB User fetched/synced successfully:", userDataFromDb);
+                            } else {
+                                const errorDataText = await response.text(); // Get text first for better debugging
+                                console.error(`[AuthProvider] Failed to fetch/sync DB user. Status: ${response.status}. Response text: ${errorDataText}`);
+                                let errorDataJson = {};
+                                try {
+                                    errorDataJson = JSON.parse(errorDataText);
+                                } catch (e) {
+                                    errorDataJson = { detail: errorDataText || response.statusText };
+                                }
+                                setDbUser(null); // Explicitly set to null on failure
+                                if (response.status === 401) { // Token might be invalid for backend
+                                    console.warn("[AuthProvider] Backend rejected token (401), logging out.");
+                                    logout(); // Call logout, which will trigger onAuthStateChanged again with null user
+                                }
+                                // Other errors (e.g., 500 from backend) will keep firebaseUser but dbUser will be null
+                            }
+                        } catch (error) {
+                            console.error("[AuthProvider] Error getting ID token or fetching DB user:", error);
+                            setDbUser(null); // Explicitly set to null on error
+                            // Don't call logout() here if firebaseUser is still valid, as it might cause a loop
+                            // Only logout if the error is clearly an auth token issue that requires re-auth.
+                            // If it's a network error fetching dbUser, Firebase auth might still be fine.
+                            // The check `isAuthenticated: !!idToken && !!dbUser` will handle this.
+                        }
+                    } else {
+                        console.log("[AuthProvider] No Firebase user found by onAuthStateChanged.");
+                        setFirebaseUser(null);
+                        setIdToken(null);
+                        setDbUser(null);
+                    }
+                    setLoading(false);
+                    console.log("[AuthProvider] AuthProvider loading set to false. Final state - idToken:", !!idToken, "dbUser:", !!dbUser);
+                });
+                return () => {
+                    console.log("[AuthProvider] Unsubscribing from onAuthStateChanged.");
+                    unsubscribe();
+                }
+            }, []); // Empty dependency array: runs once on mount, cleans up on unmount.
+
+            const loginWithFirebase = async (email, password) => {
+                console.log("[AuthProvider] loginWithFirebase called for email:", email);
+                const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+                console.log("[AuthProvider] Firebase signInWithEmailAndPassword successful for:", userCredential.user.email);
+                // onAuthStateChanged will handle setting state
+                return userCredential.user;
+            };
+
+            const registerWithFirebase = async (email, password, fullName) => {
+                console.log("[AuthProvider] registerWithFirebase called for email:", email);
+                const userCredential = await firebaseAuth.createUserWithEmailAndPassword(email, password);
+                console.log("[AuthProvider] Firebase createUserWithEmailAndPassword successful for:", userCredential.user.email);
+                await userCredential.user.updateProfile({ displayName: fullName });
+                console.log("[AuthProvider] Firebase user profile updated with displayName:", fullName);
+                // onAuthStateChanged will trigger, and its fetch to /users/me should create/sync the user in our DB.
+                return userCredential.user;
+            };
+
+            const logout = () => {
+                console.log("[AuthProvider] logout called.");
+                firebaseAuth.signOut().then(() => {
+                    console.log("[AuthProvider] Firebase signOut successful.");
+                    // onAuthStateChanged will handle clearing local state (firebaseUser, idToken, dbUser)
+                }).catch(error => {
+                    console.error("[AuthProvider] Firebase signOut error:", error);
+                });
+            };
+
+            const isAuthenticated = !!idToken && !!dbUser;
+            // console.log(`[AuthProvider] Render check. Loading: ${loading}, IsAuthenticated: ${isAuthenticated}, idToken: ${!!idToken}, dbUser: ${!!dbUser}`);
+
+            return (
+                <AuthContext.Provider value={{ firebaseUser, idToken, dbUser, loginWithFirebase, registerWithFirebase, logout, isAuthenticated, loading }}>
+                    {children}
+                </AuthContext.Provider>
+            );
+        }
+
+        function useAuth() {
+            return useContext(AuthContext);
+        }
+
+        // --- Client-side Database (sql.js) ---
+        let db = null;
+        const initSqlJs = async () => {
+            if (db) return db;
+            try {
+                const SQL = await window.initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+                });
+                db = new SQL.Database();
+                db.run(`
+                    CREATE TABLE IF NOT EXISTS user_preferences (
+                        key TEXT PRIMARY KEY,
+                        value TEXT
+                    );
+                `);
+                db.run(`INSERT OR IGNORE INTO user_preferences (key, value) VALUES ('theme', 'dark');`);
+                // console.log("sql.js initialized and preferences table ready.");
+                return db;
+            } catch (err) {
+                console.error("Failed to initialize sql.js (client-side DB):", err);
+                return null;
+            }
+        };
+
+        // ... (getPreference, setPreference remain the same)
+        const getPreference = async (key) => {
+            const localDb = await initSqlJs();
+            if (!localDb) return null;
+            const stmt = localDb.prepare("SELECT value FROM user_preferences WHERE key = :key");
+            stmt.bind({ ':key': key });
+            let value = null;
+            if (stmt.step()) {
+                value = stmt.get()[0];
+            }
+            stmt.free();
+            return value;
+        };
+
+        const setPreference = async (key, value) => {
+            const localDb = await initSqlJs();
+            if (!localDb) return;
+            localDb.run("INSERT OR REPLACE INTO user_preferences (key, value) VALUES (:key, :value)", {
+                ':key': key,
+                ':value': value
+            });
+        };
+
+
+        // --- API Service ---
+        const apiService = {
+            call: async (endpoint, method = 'GET', body = null, token = null) => {
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                const config = {
+                    method,
+                    headers,
+                };
+                if (body) {
+                    config.body = JSON.stringify(body);
+                }
+                try {
+                    // console.log(`[apiService] Calling ${method} ${API_BASE_URL}${endpoint}`);
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        let errorDetail = `API Error: ${response.status}`;
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorDetail = errorJson.detail || errorDetail;
+                        } catch(e) { /* Do nothing if not JSON */ }
+                         console.error(`[apiService] API call to ${endpoint} failed with status ${response.status}: ${errorText}`);
+                        throw new Error(errorDetail);
+                    }
+                    return response.status === 204 ? null : response.json();
+                } catch (error) {
+                    console.error(`[apiService] Network or other error calling ${endpoint}:`, error.message);
+                    throw error; // Re-throw to be caught by caller
+                }
+            }
+        };
+
+
+        // --- Helper Components ---
+        // ... (LoadingSpinner, Notification, Modal remain the same) ...
+        function LoadingSpinner() {
+            return <div className="loading-spinner"></div>;
+        }
+
+        function Notification({ message, type, onDismiss }) {
+            useEffect(() => {
+                const timer = setTimeout(onDismiss, 3000);
+                return () => clearTimeout(timer);
+            }, [onDismiss]);
+
+            return <div className={`notification ${type} show`}>{message}</div>;
+        }
+
+        function Modal({ isOpen, onClose, title, children }) {
+            if (!isOpen) return null;
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">{title}</h3>
+                            <button onClick={onClose} className="modal-close-btn">×</button>
+                        </div>
+                        {children}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Icons ---
+        // ... (Icons object remains the same) ...
+        const Icons = {
+            Dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+            Trading: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>,
+            Portfolio: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-4V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zm-6 0H8v10h6V7z"></path><path d="M14 14h2v4h-2z"></path></svg>,
+            Transactions: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+            Deposit: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>,
+            Logout: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
+            Menu: () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
+        };
+
+        // --- Navigation & Layout ---
+        function AppRouter() {
+            const { isAuthenticated, loading } = useAuth();
+            const [currentPage, setCurrentPage] = useState('dashboard');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+            // console.log(`[AppRouter] Render. Loading: ${loading}, IsAuthenticated: ${isAuthenticated}`);
+
+            useEffect(() => {
+                initSqlJs();
+                const handleResize = () => {
+                    if (window.innerWidth > 768) {
+                        setIsSidebarOpen(true);
+                    } else {
+                        setIsSidebarOpen(false);
+                    }
+                };
+                handleResize();
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
+
+            if (loading) {
+                // console.log("[AppRouter] Displaying LoadingSpinner because AuthProvider loading is true.");
+                return <LoadingSpinner />;
+            }
+
+            if (!isAuthenticated) {
+                // console.log("[AppRouter] Not authenticated, rendering AuthPage.");
+                return <AuthPage />;
+            }
+            // console.log("[AppRouter] Authenticated, rendering main app layout.");
+
+            const renderPage = () => {
+                switch (currentPage) {
+                    case 'dashboard': return <DashboardPage />;
+                    case 'trading': return <TradingPage />;
+                    case 'portfolio': return <PortfolioPage />;
+                    case 'transactions': return <TransactionsPage />;
+                    case 'deposit': return <DepositPage />;
+                    default: return <DashboardPage />;
+                }
+            };
+
+            const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+            return (
+                <div className={`app-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+                    {window.innerWidth <= 768 && (
+                        <button className="hamburger-menu" onClick={toggleSidebar} aria-label="Toggle menu">
+                            <Icons.Menu />
+                        </button>
+                    )}
+                    <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+                    <main className="main-content">
+                        {renderPage()}
+                    </main>
+                </div>
+            );
+        }
+
+        // ... (Sidebar component remains the same) ...
+        function Sidebar({ currentPage, setCurrentPage, isSidebarOpen, toggleSidebar }) {
+            const { logout, dbUser } = useAuth(); // Use dbUser from our backend
+            const navItems = [
+                { name: 'Dashboard', page: 'dashboard', icon: Icons.Dashboard },
+                { name: 'Trading', page: 'trading', icon: Icons.Trading },
+                { name: 'Portfolio', page: 'portfolio', icon: Icons.Portfolio },
+                { name: 'Transactions', page: 'transactions', icon: Icons.Transactions },
+                { name: 'Deposit Funds', page: 'deposit', icon: Icons.Deposit },
+            ];
+
+            const handleNavigation = (page) => {
+                setCurrentPage(page);
+                if (window.innerWidth <= 768 && isSidebarOpen) {
+                    toggleSidebar();
+                }
+            };
+
+            return (
+                <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+                    <div className="sidebar-logo">Nova<span>Trade</span></div>
+                    <nav>
+                        <ul className="nav-menu">
+                            {navItems.map(item => (
+                                <li key={item.page} className="nav-item">
+                                    <a
+                                        href="#"
+                                        className={currentPage === item.page ? 'active' : ''}
+                                        onClick={(e) => { e.preventDefault(); handleNavigation(item.page); }}
+                                    >
+                                        <item.icon /> {item.name}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                    <div style={{ marginTop: 'auto' }}>
+                        {dbUser && <div style={{padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Welcome, {dbUser.full_name || dbUser.email}!</div>}
+                        <button className="nav-item" onClick={logout} style={{width: '100%'}}>
+                            <Icons.Logout /> Logout
+                        </button>
+                    </div>
+                </aside>
+            );
+        }
+
+        // --- Pages ---
+        // ... (AuthPage remains largely the same, the logging is now in AuthProvider) ...
+        function AuthPage() {
+            const [isLogin, setIsLogin] = useState(true);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [fullName, setFullName] = useState('');
+            const [error, setError] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const { loginWithFirebase, registerWithFirebase } = useAuth();
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setIsLoading(true);
+                // console.log(`[AuthPage] handleSubmit. Mode: ${isLogin ? 'Login' : 'Register'}`);
+                try {
+                    if (isLogin) {
+                        await loginWithFirebase(email, password);
+                    } else {
+                        if (password.length < 6) {
+                           throw new Error("Password should be at least 6 characters.");
+                        }
+                        await registerWithFirebase(email, password, fullName);
+                    }
+                    // console.log("[AuthPage] Firebase auth call successful. AuthProvider will handle state.");
+                } catch (err) {
+                    let friendlyMessage = err.message.replace('Firebase: ', '');
+                    if (friendlyMessage.includes("(auth/invalid-credential)")) {
+                        friendlyMessage = "Invalid email or password. Please try again.";
+                    } else if (friendlyMessage.includes("(auth/email-already-in-use)")) {
+                        friendlyMessage = "This email is already registered. Please login or use a different email.";
+                    }
+                    setError(friendlyMessage);
+                    console.error("[AuthPage] Firebase Auth error:", err);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div className="auth-container">
+                    <div className="auth-form">
+                        <h2 className="auth-title">{isLogin ? 'Login to NovaTrade' : 'Create Account'}</h2>
+                        <form onSubmit={handleSubmit}>
+                            {!isLogin && (
+                                <div className="form-group">
+                                    <label htmlFor="fullName">Full Name</label>
+                                    <input type="text" id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} required={!isLogin} />
+                                </div>
+                            )}
+                            <div className="form-group">
+                                <label htmlFor="email">Email</label>
+                                <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="password">Password</label>
+                                <input type="password" id="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                                {!isLogin && <small className="text-secondary mt-1" style={{display: 'block'}}>Password should be at least 6 characters.</small>}
+                            </div>
+                            {error && <p style={{ color: 'var(--danger-color)', marginBottom: '1rem' }}>{error}</p>}
+                            <button type="submit" className="btn btn-primary btn-full-width" disabled={isLoading}>
+                                {isLoading ? 'Processing...' : (isLogin ? 'Login' : 'Register')}
+                            </button>
+                        </form>
+                        <p className="auth-switch">
+                            {isLogin ? "Don't have an account? " : "Already have an account? "}
+                            <a href="#" onClick={(e) => { e.preventDefault(); setIsLogin(!isLogin); setError(''); }}>
+                                {isLogin ? 'Register here' : 'Login here'}
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- DashboardPage, TradingPage, etc. remain structurally similar, ensure idToken check before API calls ---
+        // For brevity, I will only show the useEffect in DashboardPage as an example of checking idToken
+        // Apply similar checks in other pages that make API calls.
+
+        const MOCK_ASSETS_DETAILS = {
+            "BTCUSD": { name: "Bitcoin", type: "crypto"},
+            "ETHUSD": { name: "Ethereum", type: "crypto"},
+            "EURUSD": { name: "Euro/US Dollar", type: "forex"},
+            "GBPUSD": { name: "British Pound/US Dollar", type: "forex"},
+            "TSLA": { name: "Tesla Inc.", type: "stock"},
+        };
+
+        function DashboardPage() {
+            const [marketData, setMarketData] = useState([]);
+            const [pageLoading, setPageLoading] = useState(true); // Renamed to avoid conflict with AuthProvider's loading
+            const [error, setError] = useState(null);
+            const [portfolioSummary, setPortfolioSummary] = useState({ totalValue: 0, totalPnl: 0 });
+            const { idToken, loading: authLoading } = useAuth(); // Get authLoading state
+            const wsRef = useRef(null);
+
+            useEffect(() => {
+                // console.log(`[DashboardPage] useEffect for initial data. AuthLoading: ${authLoading}, idToken: ${!!idToken}`);
+                if (authLoading) { // Wait for auth provider to finish its loading
+                    setPageLoading(true);
+                    return;
+                }
+                if (!idToken) { // If auth is done but no token, user is not logged in or error occurred
+                    // console.log("[DashboardPage] No idToken available after auth loading. User likely not authenticated.");
+                    setPageLoading(false);
+                    //setError("User not authenticated. Cannot fetch dashboard data."); // Optional: show specific error
+                    setMarketData([]); // Clear data
+                    setPortfolioSummary({ totalValue: 0, totalPnl: 0 });
+                    return;
+                }
+
+                const fetchInitialData = async () => {
+                    // console.log("[DashboardPage] fetchInitialData called.");
+                    setPageLoading(true);
+                    setError(null);
+                    try {
+                        const [prices, portfolio] = await Promise.all([
+                            apiService.call('/market/prices', 'GET', null, idToken),
+                            apiService.call('/portfolio', 'GET', null, idToken)
+                        ]);
+                        setMarketData(prices || []);
+                        updatePortfolioSummary(portfolio || [], prices || []);
+                    } catch (err) {
+                        setError(`Failed to load initial data: ${err.message}`);
+                        console.error("[DashboardPage] Initial data fetch error:", err);
+                        setMarketData([]);
+                        setPortfolioSummary({ totalValue: 0, totalPnl: 0 });
+                    } finally {
+                        setPageLoading(false);
+                    }
+                };
+
+                fetchInitialData();
+
+            }, [idToken, authLoading]);
+
+
+             useEffect(() => { // WebSocket connection effect
+                // console.log(`[DashboardPage] WebSocket effect. idToken: ${!!idToken}, authLoading: ${authLoading}`);
+                if (authLoading || !idToken) {
+                    if(wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                        // console.log("[DashboardPage] Closing WebSocket due to auth change or logout.");
+                        wsRef.current.close(1000, "Auth state changed");
+                        wsRef.current = null;
+                    }
+                    return; // Don't connect WebSocket without auth or while auth is loading
+                }
+
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    // console.log("[DashboardPage] WebSocket already open and connected.");
+                    return; // Already connected
+                }
+
+
+                const connectWebSocket = () => {
+                    // console.log("[DashboardPage] connectWebSocket called.");
+                    let wsUrl = API_BASE_URL.replace(/^http/, 'ws');
+                    wsRef.current = new WebSocket(`${wsUrl}/ws/market-data`);
+
+                    wsRef.current.onopen = () => {
+                        console.log("[DashboardPage] Market data WebSocket connected");
+                        // setError(null); // Clearing error might hide a previous HTTP error
+                    };
+
+                    wsRef.current.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            if (message.type === "market_update" || message.type === "market_snapshot") {
+                                setMarketData(prevData => {
+                                    const newDataMap = new Map((prevData || []).map(item => [item.symbol, item]));
+                                    (message.data || []).forEach(item => newDataMap.set(item.symbol, item));
+                                    return Array.from(newDataMap.values());
+                                });
+                                if (message.error) {
+                                    setError(prevError => prevError ? `${prevError}. WS Error: ${message.error}` : `Market data feed issue: ${message.error}`);
+                                }
+                            }
+                        } catch (parseError) {
+                            console.error("[DashboardPage] Failed to parse WebSocket message:", parseError, event.data);
+                            setError(prevError => prevError ? `${prevError}. WS Parse Error.` : "Error processing real-time market data.");
+                        }
+                    };
+
+                    wsRef.current.onerror = (err) => {
+                        console.error("[DashboardPage] WebSocket error:", err);
+                        setError(prevError => prevError ? `${prevError}. WS Connection Error.` : "WebSocket connection error. Real-time updates may be disrupted.");
+                    };
+
+                    wsRef.current.onclose = (event) => {
+                        console.log("[DashboardPage] Market data WebSocket disconnected. Code:", event.code, "Reason:", event.reason, "Was Clean:", event.wasClean);
+                        if (!event.wasClean && idToken) { // Only show error if not deliberate close and still logged in
+                             setError(prevError => prevError ? `${prevError}. WS Disconnected.` : "WebSocket disconnected unexpectedly.");
+                        }
+                        wsRef.current = null; // Ensure ref is cleared on close
+                    };
+                };
+
+                connectWebSocket();
+
+                return () => {
+                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                        // console.log("[DashboardPage] Cleaning up WebSocket connection.");
+                        wsRef.current.close(1000, "Component unmounting");
+                        wsRef.current = null;
+                    }
+                };
+            }, [idToken, authLoading]);
+
+
+            useEffect(() => { // Portfolio summary update effect
+                if (authLoading || !idToken) return;
+
+                const updateSummaryWithNewPrices = async () => {
+                    if (marketData && marketData.length > 0) { // Check if marketData is populated
+                         try {
+                            // console.log("[DashboardPage] Updating portfolio summary with new market prices.");
+                            const portfolio = await apiService.call('/portfolio', 'GET', null, idToken);
+                            updatePortfolioSummary(portfolio || [], marketData);
+                        } catch(err) {
+                            console.warn("[DashboardPage] Error fetching portfolio for summary update:", err.message);
+                        }
+                    }
+                };
+                updateSummaryWithNewPrices();
+            }, [marketData, idToken, authLoading]);
+
+
+            const updatePortfolioSummary = (portfolio, currentPrices) => {
+                if (!portfolio || !Array.isArray(portfolio)) {
+                    // console.warn("[DashboardPage] updatePortfolioSummary called with invalid portfolio data", portfolio);
+                    setPortfolioSummary({ totalValue: 0, totalPnl: 0 });
+                    return;
+                }
+                let totalValue = 0;
+                let totalPnl = 0;
+                const priceMap = new Map((currentPrices || []).map(p => [p.symbol, p.price]));
+
+                portfolio.forEach(item => {
+                    const currentPrice = priceMap.get(item.asset_id) || item.average_buy_price;
+                    totalValue += item.quantity * currentPrice;
+                    totalPnl += (currentPrice - item.average_buy_price) * item.quantity;
+                });
+
+                setPortfolioSummary({
+                    totalValue: totalValue,
+                    totalPnl: totalPnl,
+                });
+            };
+
+
+            if (pageLoading || authLoading) return <LoadingSpinner />; // Use pageLoading and authLoading
+
+            const cryptoAssets = marketData.filter(asset => MOCK_ASSETS_DETAILS[asset.symbol]?.type === 'crypto');
+            const forexAssets = marketData.filter(asset => MOCK_ASSETS_DETAILS[asset.symbol]?.type === 'forex');
+            const stockAssets = marketData.filter(asset => MOCK_ASSETS_DETAILS[asset.symbol]?.type === 'stock');
+
+            return (
+                <div>
+                    <h1 className="page-header">Dashboard</h1>
+                    {error && <p className="text-center" style={{color: 'var(--danger-color)', marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px'}}>{error}</p>}
+                    <div className="grid-container mb-3">
+                        <StatCard title="Total Portfolio Value" value={`$${portfolioSummary.totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} />
+                        <StatCard title="Total Unrealized P&L" value={`${portfolioSummary.totalPnl < 0 ? '-' : ''}$${Math.abs(portfolioSummary.totalPnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+                                  changeColor={portfolioSummary.totalPnl >= 0 ? 'var(--secondary-color)' : 'var(--danger-color)'} />
+                    </div>
+
+                    {cryptoAssets.length > 0 && <AssetSection title="Cryptocurrencies" assets={cryptoAssets} />}
+                    {forexAssets.length > 0 && <AssetSection title="Forex Pairs (Simulated)" assets={forexAssets} />}
+                    {stockAssets.length > 0 && <AssetSection title="Stocks (Simulated)" assets={stockAssets} />}
+
+                    {marketData.length === 0 && !pageLoading && !error && <p>No market data available. Ensure backend is running and accessible.</p>}
+                    {/* Removed the more specific error check here as generic 'error' should cover it */}
+                </div>
+            );
+        }
+
+        // ... (StatCard, AssetSection, TradingPage, PortfolioPage, TransactionsPage, DepositPage, App remain the same from previous fully functional example but ensure they use idToken and check authLoading from useAuth() before API calls if necessary) ...
+
+        function StatCard({ title, value, change, changeColor }) {
+            return (
+                <div className="stat-card">
+                    <h3 className="stat-card-title">{title}</h3>
+                    <p className="stat-card-value">{value}</p>
+                    {change && <p className="stat-card-change" style={{ color: changeColor }}>{change}</p>}
+                </div>
+            );
+        }
+
+        function AssetSection({ title, assets }) {
+            const [selectedAsset, setSelectedAsset] = useState(null);
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+
+            useEffect(() => {
+                if (selectedAsset && chartRef.current) {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                    const labels = Array.from({ length: 30 }, (_, i) => `T-${29-i}`);
+                    const basePrice = selectedAsset.price;
+                    let pricePoints = [basePrice];
+                    for(let i=0; i<29; i++){
+                        pricePoints.unshift(pricePoints[0] * (0.98 + Math.random() * 0.04));
+                    }
+
+                    chartInstanceRef.current = new Chart(chartRef.current, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `${MOCK_ASSETS_DETAILS[selectedAsset.symbol]?.name || selectedAsset.symbol} Price History (Simulated)`,
+                                data: pricePoints,
+                                borderColor: 'var(--primary-color)',
+                                backgroundColor: 'rgba(109, 40, 217, 0.1)',
+                                tension: 0.2,
+                                pointRadius: 1,
+                                pointHoverRadius: 5,
+                                fill: true,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    ticks: { color: 'var(--text-secondary)', callback: function(value) { return '$' + value.toFixed(MOCK_ASSETS_DETAILS[selectedAsset.symbol]?.type === 'forex' ? 4 : 2); } },
+                                    grid: { color: 'var(--border-color)', drawBorder: false }
+                                },
+                                x: {
+                                    ticks: { color: 'var(--text-secondary)', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+                                    grid: { display: false }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: true, labels: {color: 'var(--text-primary)'} },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed.y !== null) {
+                                                label += '$' + context.parsed.y.toFixed(MOCK_ASSETS_DETAILS[selectedAsset.symbol]?.type === 'forex' ? 4 : 2);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            interaction: {
+                                mode: 'nearest',
+                                axis: 'x',
+                                intersect: false
+                            }
+                        }
+                    });
+                }
+                 return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                        chartInstanceRef.current = null;
+                    }
+                };
+            }, [selectedAsset]);
+
+            if (!assets || assets.length === 0) return null;
+
+            return (
+                 <div className="card">
+                    <h2 className="card-header">{title}</h2>
+                    <div className="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>24h Change</th>
+                                    <th>Last Update</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assets.map(asset => (
+                                    <tr key={asset.symbol} onClick={() => setSelectedAsset(asset)} style={{cursor: 'pointer'}} title={`Click to see chart for ${asset.symbol}`}>
+                                        <td>{asset.symbol}</td>
+                                        <td>{MOCK_ASSETS_DETAILS[asset.symbol]?.name || asset.symbol}</td>
+                                        <td>${asset.price.toLocaleString(undefined, {minimumFractionDigits: MOCK_ASSETS_DETAILS[asset.symbol]?.type === 'forex' ? 4 : 2, maximumFractionDigits: MOCK_ASSETS_DETAILS[asset.symbol]?.type === 'forex' ? 4 : 8})}</td>
+                                        <td className={asset.change_24h >= 0 ? 'price-up' : 'price-down'}>
+                                            {asset.change_24h >= 0 ? '+' : ''}{asset.change_24h.toFixed(2)}%
+                                        </td>
+                                        <td>{new Date(asset.timestamp).toLocaleTimeString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {selectedAsset && (
+                        <div className="mt-3">
+                            <h3 className="card-header" style={{borderBottom: 'none', paddingBottom: 0}}>Price Chart: {MOCK_ASSETS_DETAILS[selectedAsset.symbol]?.name || selectedAsset.symbol} ({selectedAsset.symbol})</h3>
+                            <div className="chart-container">
+                                <canvas ref={chartRef}></canvas>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+
+        function TradingPage() {
+            const [assets, setAssets] = useState([]);
+            const [selectedAsset, setSelectedAsset] = useState('');
+            const [tradeType, setTradeType] = useState('BUY');
+            const [quantity, setQuantity] = useState('');
+            const [priceLimit, setPriceLimit] = useState('');
+            const [isLoading, setIsLoading] = useState(false); // For trade execution
+            const [pageLoading, setPageLoading] = useState(true); // For fetching assets
+            const [notification, setNotification] = useState({ message: '', type: '', show: false });
+            const { idToken, loading: authLoading } = useAuth();
+
+            useEffect(() => {
+                if (authLoading) {
+                    setPageLoading(true);
+                    return;
+                }
+                if (!idToken) {
+                    setPageLoading(false);
+                    setAssets([]);
+                    return;
+                }
+
+                const fetchAssets = async () => {
+                    setPageLoading(true);
+                    try {
+                        const marketData = await apiService.call('/market/prices', 'GET', null, idToken);
+                        setAssets(marketData || []);
+                        if ((marketData || []).length > 0 && !selectedAsset) {
+                            setSelectedAsset(marketData[0].symbol);
+                        }
+                    } catch (error) {
+                        showNotification(`Error fetching assets: ${error.message}`, 'error');
+                        setAssets([]);
+                    } finally {
+                        setPageLoading(false);
+                    }
+                };
+                fetchAssets();
+            }, [idToken, authLoading]);
+
+             useEffect(() => {
+                if (assets.length > 0 && !selectedAsset) {
+                    setSelectedAsset(assets[0].symbol);
+                }
+            }, [assets, selectedAsset]);
+
+
+            const showNotification = (message, type) => {
+                setNotification({ message, type, show: true });
+            };
+
+            const handleTrade = async (e) => {
+                e.preventDefault();
+                if (!idToken) {
+                    showNotification('Authentication error. Please re-login.', 'error');
+                    return;
+                }
+                if (!selectedAsset || !quantity || parseFloat(quantity) <= 0) {
+                    showNotification('Please select an asset and enter a valid quantity.', 'error');
+                    return;
+                }
+                setIsLoading(true); // For trade execution spinner
+                try {
+                    const tradeData = {
+                        asset_id: selectedAsset,
+                        trade_type: tradeType,
+                        quantity: parseFloat(quantity),
+                    };
+                    if (priceLimit && parseFloat(priceLimit) > 0) {
+                        tradeData.price_limit = parseFloat(priceLimit);
+                    }
+
+                    const result = await apiService.call('/trade/execute', 'POST', tradeData, idToken);
+                    showNotification(result.message || 'Trade executed successfully!', 'success');
+                    setQuantity('');
+                    setPriceLimit('');
+                } catch (error) {
+                    showNotification(`Trade failed: ${error.message}`, 'error');
+                } finally {
+                    setIsLoading(false); // For trade execution spinner
+                }
+            };
+
+            const currentAssetDetails = assets.find(a => a.symbol === selectedAsset);
+            const currentPrice = currentAssetDetails?.price || 0;
+            const assetType = MOCK_ASSETS_DETAILS[selectedAsset]?.type;
+            const priceDecimals = assetType === 'forex' ? 4 : 2;
+            const estimatedTotal = (quantity && currentPrice) ? (parseFloat(quantity) * currentPrice).toFixed(priceDecimals) : '0.00';
+
+            if (pageLoading || authLoading) return <LoadingSpinner />;
+
+            return (
+                <div>
+                    <h1 className="page-header">Trade Assets</h1>
+                    <div className="card">
+                        <h2 className="card-header">New Trade</h2>
+                        <form onSubmit={handleTrade}>
+                            <div className="form-group">
+                                <label htmlFor="asset">Asset</label>
+                                <select id="asset" value={selectedAsset} onChange={e => setSelectedAsset(e.target.value)} disabled={assets.length === 0}>
+                                    {assets.length === 0 && <option>Loading assets...</option>}
+                                    {assets.map(asset => (
+                                        <option key={asset.symbol} value={asset.symbol}>
+                                            {MOCK_ASSETS_DETAILS[asset.symbol]?.name || asset.symbol} ({asset.symbol}) - ${asset.price.toFixed(MOCK_ASSETS_DETAILS[asset.symbol]?.type === 'forex' ? 4 : 2)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Trade Type</label>
+                                <div>
+                                    <button type="button" className={`btn ${tradeType === 'BUY' ? 'btn-buy' : 'btn-secondary'}`} onClick={() => setTradeType('BUY')} style={{marginRight: '0.5rem'}}>BUY</button>
+                                    <button type="button" className={`btn ${tradeType === 'SELL' ? 'btn-sell' : 'btn-secondary'}`} onClick={() => setTradeType('SELL')}>SELL</button>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="quantity">Quantity {currentAssetDetails ? `(${currentAssetDetails.symbol})` : ''}</label>
+                                <input type="number" id="quantity" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="e.g., 0.5" step="any" min="0.00000001" />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="priceLimit">Price Limit (Optional) {currentAssetDetails ? `(USD per ${currentAssetDetails.symbol})` : ''}</label>
+                                <input type="number" id="priceLimit" value={priceLimit} onChange={e => setPriceLimit(e.target.value)} placeholder={`e.g., ${currentPrice > 0 ? (currentPrice * (tradeType === 'BUY' ? 0.99 : 1.01)).toFixed(priceDecimals) : ''}`} step="any" min="0" />
+                                <small className="text-secondary mt-1" style={{display: 'block'}}>Current market price: ${currentPrice.toFixed(priceDecimals)}</small>
+                            </div>
+
+                            <div className="form-group">
+                                <p>Estimated Total (USD): <strong>${estimatedTotal}</strong> (based on current market price if no limit)</p>
+                            </div>
+
+                            <button type="submit" className={`btn ${tradeType === 'BUY' ? 'btn-buy' : 'btn-sell'} btn-full-width`} disabled={isLoading || !selectedAsset || pageLoading}>
+                                {isLoading ? 'Processing...' : `${tradeType} ${MOCK_ASSETS_DETAILS[selectedAsset]?.name || selectedAsset || 'Asset'}`}
+                            </button>
+                        </form>
+                    </div>
+                    {notification.show && <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ ...notification, show: false })} />}
+                </div>
+            );
+        }
+
+        function PortfolioPage() {
+            const [portfolio, setPortfolio] = useState([]);
+            const [pageLoading, setPageLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const { idToken, loading: authLoading } = useAuth();
+
+            useEffect(() => {
+                if (authLoading) {
+                    setPageLoading(true);
+                    return;
+                }
+                if (!idToken) {
+                    setPageLoading(false);
+                    setPortfolio([]);
+                    return;
+                }
+
+                const fetchPortfolio = async () => {
+                    setPageLoading(true);
+                    setError(null);
+                    try {
+                        const data = await apiService.call('/portfolio', 'GET', null, idToken);
+                        setPortfolio(data || []);
+                    } catch (err) {
+                        setError(err.message);
+                        setPortfolio([]);
+                    } finally {
+                        setPageLoading(false);
+                    }
+                };
+
+                fetchPortfolio();
+                const intervalId = setInterval(fetchPortfolio, 30000);
+                return () => clearInterval(intervalId);
+
+            }, [idToken, authLoading]);
+
+            if (pageLoading || authLoading) return <LoadingSpinner />;
+            if (error) return <p className="text-center" style={{color: 'var(--danger-color)'}}>Error loading portfolio: {error}</p>;
+
+            const totalPortfolioValue = portfolio.reduce((sum, item) => sum + (item.current_value || 0), 0);
+            const totalPnl = portfolio.reduce((sum, item) => sum + (item.unrealized_pnl || 0), 0);
+
+
+            return (
+                <div>
+                    <h1 className="page-header">My Portfolio</h1>
+                    <div className="grid-container mb-3">
+                        <StatCard title="Total Value" value={`$${totalPortfolioValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} />
+                        <StatCard title="Total Unrealized P&L"
+                                  value={`${totalPnl < 0 ? '-' : ''}$${Math.abs(totalPnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`}
+                                  changeColor={totalPnl >= 0 ? 'var(--secondary-color)' : 'var(--danger-color)'} />
+                    </div>
+                    <div className="card">
+                        <h2 className="card-header">Asset Holdings</h2>
+                        {portfolio.length === 0 ? (
+                            <p className="mt-2">Your portfolio is empty. Start trading to add assets!</p>
+                        ) : (
+                            <div className="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Asset</th>
+                                            <th>Quantity</th>
+                                            <th>Avg. Buy Price</th>
+                                            <th>Current Price</th>
+                                            <th>Total Value</th>
+                                            <th>Unrealized P&L</th>
+                                            <th>P&L %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {portfolio.map(item => {
+                                            const assetDetail = MOCK_ASSETS_DETAILS[item.asset_id] || {name: item.asset_id, type: 'stock'};
+                                            const pnl = item.unrealized_pnl || 0;
+                                            const pnlPercent = item.unrealized_pnl_percent || 0;
+                                            const currentPrice = item.current_price || item.average_buy_price;
+                                            const currentValue = item.current_value || (item.quantity * item.average_buy_price);
+
+                                            return (
+                                            <tr key={item.asset_id}>
+                                                <td>{assetDetail.name} ({item.asset_id})</td>
+                                                <td>{item.quantity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 8})}</td>
+                                                <td>${item.average_buy_price.toLocaleString(undefined, {minimumFractionDigits: assetDetail.type === 'forex' ? 4 : 2, maximumFractionDigits: assetDetail.type === 'forex' ? 4 : 8})}</td>
+                                                <td>${currentPrice.toLocaleString(undefined, {minimumFractionDigits: assetDetail.type === 'forex' ? 4 : 2, maximumFractionDigits: assetDetail.type === 'forex' ? 4 : 8})}</td>
+                                                <td>${currentValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                <td className={pnl >= 0 ? 'price-up' : 'price-down'}>
+                                                    {pnl < 0 ? '-' : ''}${Math.abs(pnl).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                                </td>
+                                                <td className={pnlPercent >= 0 ? 'price-up' : 'price-down'}>
+                                                    {pnlPercent > 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
+                                                </td>
+                                            </tr>
+                                        )})}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function TransactionsPage() {
+            const [transactions, setTransactions] = useState([]);
+            const [pageLoading, setPageLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const { idToken, loading: authLoading } = useAuth();
+
+            useEffect(() => {
+                 if (authLoading) {
+                    setPageLoading(true);
+                    return;
+                }
+                if (!idToken) {
+                    setPageLoading(false);
+                    setTransactions([]);
+                    return;
+                }
+                const fetchTransactions = async () => {
+                    setPageLoading(true);
+                    setError(null);
+                    try {
+                        const data = await apiService.call('/transactions?limit=50', 'GET', null, idToken);
+                        setTransactions(data || []);
+                    } catch (err) {
+                        setError(err.message);
+                        setTransactions([]);
+                    } finally {
+                        setPageLoading(false);
+                    }
+                };
+                fetchTransactions();
+            }, [idToken, authLoading]);
+
+            if (pageLoading || authLoading) return <LoadingSpinner />;
+            if (error) return <p className="text-center" style={{color: 'var(--danger-color)'}}>Error loading transactions: {error}</p>;
+
+            return (
+                <div>
+                    <h1 className="page-header">Transaction History</h1>
+                    <div className="card">
+                        <h2 className="card-header">Recent Transactions</h2>
+                        {transactions.length === 0 ? (
+                            <p className="mt-2">No transactions yet.</p>
+                        ) : (
+                            <div className="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Asset</th>
+                                            <th>Quantity</th>
+                                            <th>Price/Unit</th>
+                                            <th>Total Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {transactions.map(tx => (
+                                            <tr key={tx.id}>
+                                                <td>{new Date(tx.timestamp).toLocaleString()}</td>
+                                                <td style={{fontWeight: 'bold', textTransform: 'uppercase', color: tx.type === 'BUY' || tx.type === 'DEPOSIT' ? 'var(--secondary-color)' : 'var(--danger-color)'}}>{tx.type}</td>
+                                                <td>{tx.asset_id || 'N/A (Fiat)'}</td>
+                                                <td>{tx.quantity ? tx.quantity.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:8}) : 'N/A'}</td>
+                                                <td>{tx.price_per_unit ? `$${tx.price_per_unit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits: MOCK_ASSETS_DETAILS[tx.asset_id]?.type === 'forex' ? 4 : 2})}` : 'N/A'}</td>
+                                                <td>${tx.total_amount.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                                                <td>
+                                                    <span style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '4px',
+                                                        backgroundColor: tx.status === 'COMPLETED' ? 'var(--secondary-color)' : (tx.status === 'PENDING' ? '#f59e0b' : 'var(--danger-color)'),
+                                                        color: 'white',
+                                                        fontSize: '0.8rem',
+                                                        textTransform: 'capitalize'
+                                                    }}>
+                                                        {tx.status.toLowerCase()}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function DepositPage() {
+            const [amount, setAmount] = useState('');
+            const [currency, setCurrency] = useState('USD');
+            const [isLoading, setIsLoading] = useState(false); // For payment process
+            const [notification, setNotification] = useState({ message: '', type: '', show: false });
+            const { idToken, loading: authLoading } = useAuth();
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [paymentIntent, setPaymentIntent] = useState(null);
+
+            const showNotification = (message, type) => {
+                setNotification({ message, type, show: true });
+            };
+
+            const handleCreateIntent = async (e) => {
+                e.preventDefault();
+                if (authLoading) return; // Should not happen if page is rendered
+                if (!idToken) {
+                    showNotification('Authentication error. Please re-login.', 'error');
+                    return;
+                }
+                if (!amount || parseFloat(amount) <= 0) {
+                    showNotification('Please enter a valid amount.', 'error');
+                    return;
+                }
+                if (parseFloat(amount) < 1) {
+                    showNotification('Minimum deposit amount is $1.00.', 'error');
+                    return;
+                }
+                setIsLoading(true);
+                try {
+                    const intentData = { amount: parseFloat(amount), currency };
+                    const result = await apiService.call('/payments/create-intent', 'POST', intentData, idToken);
+                    setPaymentIntent(result);
+                    setIsModalOpen(true);
+                } catch (error) {
+                    showNotification(`Error creating payment intent: ${error.message}`, 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleConfirmPayment = async () => {
+                if (!paymentIntent || !idToken) return;
+                setIsLoading(true);
+                try {
+                    const result = await apiService.call(`/payments/confirm/${paymentIntent.id}`, 'POST', null, idToken);
+                    showNotification(result.message || 'Payment confirmed successfully!', 'success');
+                    setIsModalOpen(false);
+                    setAmount('');
+                    setPaymentIntent(null);
+                } catch (error) {
+                     showNotification(`Payment confirmation failed: ${error.message}`, 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            if (authLoading) return <LoadingSpinner/>; // Show spinner if auth is still loading
+
+            return (
+                <div>
+                    <h1 className="page-header">Deposit Funds</h1>
+                    <div className="card">
+                        <h2 className="card-header">Make a Deposit</h2>
+                        <form onSubmit={handleCreateIntent}>
+                            <div className="form-group">
+                                <label htmlFor="amount">Amount</label>
+                                <input
+                                    type="number"
+                                    id="amount"
+                                    value={amount}
+                                    onChange={e => setAmount(e.target.value)}
+                                    placeholder="e.g., 1000"
+                                    step="0.01"
+                                    min="1"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="currency">Currency</label>
+                                <select id="currency" value={currency} onChange={e => setCurrency(e.target.value)} disabled>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <button type="submit" className="btn btn-primary btn-full-width" disabled={isLoading || authLoading}>
+                                {isLoading ? 'Processing...' : 'Proceed to Payment Simulation'}
+                            </button>
+                        </form>
+                    </div>
+
+                    <Modal isOpen={isModalOpen} onClose={() => {if(!isLoading) setIsModalOpen(false);}} title="Simulate Payment">
+                        {paymentIntent && (
+                            <div>
+                                <p>You are about to deposit <strong>{parseFloat(paymentIntent.amount).toLocaleString(undefined, {style:'currency', currency: paymentIntent.currency})}</strong>.</p>
+                                <p className="mt-1 text-secondary">This is a simulated payment gateway. No real money will be transferred.</p>
+                                <p className="mt-1 text-secondary" style={{fontSize: '0.8em'}}>Payment Intent ID: <code style={{backgroundColor: 'var(--background-color)', padding: '2px 4px', borderRadius: '4px'}}>{paymentIntent.id}</code></p>
+
+                                <div className="mt-3 d-flex justify-between">
+                                    <button className="btn btn-secondary" onClick={() => {if(!isLoading) setIsModalOpen(false);}} disabled={isLoading}>Cancel</button>
+                                    <button className="btn btn-primary" onClick={handleConfirmPayment} disabled={isLoading}>
+                                        {isLoading ? 'Confirming...' : `Confirm ${parseFloat(paymentIntent.amount).toLocaleString(undefined, {style:'currency', currency: paymentIntent.currency})}`}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
+
+                    {notification.show && <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ ...notification, show: false })} />}
+                </div>
+            );
+        }
+
+
+        function App() {
+            return (
+                <AuthProvider>
+                    <AppRouter />
+                </AuthProvider>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+
+    <!-- Backend Python code comment block remains the same -->
+    <!--
+    ============================================================================
+    BACKEND: FastAPI (Python) - Run this server separately
+    ============================================================================
+    ... (rest of your backend instructions and code comment block) ...
+    -->
+
+</body>
+</html>

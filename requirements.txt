@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+firebase-admin
+python-jose[cryptography] # if you kept any JWT parts, or for other uses
+passlib[bcrypt]         # if you kept any password hashing parts
+websockets
+# Add your database drivers like:
+# sqlalchemy
+# databases
+# aiosqlite  # For SQLite example
+# psycopg2-binary # For PostgreSQL
